@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="listentries">
+        <item>off</item>
+        <item>2</item>
+        <item>4</item>
+        <item>8</item>
+        <item>16</item>
+        <item>32</item>
+        <item>64</item>
+    </string-array>
+    <string-array name="listvalues">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+    </string-array>
+
+    <string-array name="adc_sample_rate_entries">
+        <item>2.5</item>
+        <item>5</item>
+        <item>10</item>
+        <item>30</item>
+        <item>50</item>
+        <item>60</item>
+        <item>100</item>
+        <item>500</item>
+        <item>1000</item>
+        <item>2000</item>
+        <item>3750</item>
+        <item>7500</item>
+        <item>15000</item>
+        <item>30000</item>
+    </string-array>
+    <string-array name="adc_sample_rate_values">
+        <item>0x03</item>
+        <item>0x13</item>
+        <item>0x20</item>
+        <item>0x33</item>
+        <item>0x43</item>
+        <item>0x53</item>
+        <item>0x63</item>
+        <item>0x72</item>
+        <item>0x82</item>
+        <item>0x92</item>
+        <item>0xA1</item>
+        <item>0xB0</item>
+        <item>0xC0</item>
+        <item>0xD0</item>
+        <item>0xE0</item>
+        <item>0xF0</item>
+    </string-array>
+
+    <string-array name="app_refresh_delay_entries">
+        <item>0.05s</item>
+        <item>0.1s</item>
+        <item>0.5s</item>
+        <item>1s</item>
+    </string-array>
+    <string-array name="app_refresh_delay_values">
+        <item>50</item>
+        <item>100</item>
+        <item>500</item>
+        <item>1000</item>
+    </string-array>
+</resources>
