@@ -1,14 +1,43 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <SwitchPreference
-        android:key="example_switch"
-        android:title="@string/pref_title_social_recommendations"
-        android:summary="@string/pref_description_social_recommendations"
-        android:defaultValue="true" />
+    <PreferenceCategory
+        android:title="ADC Config">
+        <ListPreference
+            android:key="adc_input_gain"
+            android:title="ADC input gain"
+            android:summary="ListPreference summary"
+            android:entries="@array/listentries"
+            android:entryValues="@array/listvalues" />
+        <ListPreference
+            android:key="adc_sample_rate"
+            android:title="ADC sample rate"
+            android:summary="ListPreference summary"
+            android:entries="@array/adc_sample_rate_entries"
+            android:entryValues="@array/adc_sample_rate_values" />
+        <SwitchPreference
+            android:key="adc_input_buffer"
+            android:title="ADC buffer"
+            android:summary="increases input impedance, reduces input voltage to 0-3V"
+            android:defaultValue="true" />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="App Config">
+        <ListPreference
+            android:key="app_refresh_delay"
+            android:title="refresh delay"
+            android:summary="ListPreference summary"
+            android:entries="@array/app_refresh_delay_entries"
+            android:entryValues="@array/app_refresh_delay_values" />
+        <ListPreference
+            android:key="adc_max_channels"
+            android:title="channels"
+            android:summary="ListPreference summary"
+            android:entries="@array/max_channels_entries"
+            android:entryValues="@array/max_channels_entries" />
+    </PreferenceCategory>
 
     <!-- NOTE: EditTextPreference accepts EditText attributes. -->
     <!-- NOTE: EditTextPreference's summary should be set to its value by the activity code. -->
-    <EditTextPreference
+    <!--EditTextPreference
         android:key="example_text"
         android:title="@string/pref_title_display_name"
         android:defaultValue="@string/pref_default_display_name"
@@ -16,18 +45,18 @@
         android:inputType="textCapWords"
         android:capitalize="words"
         android:singleLine="true"
-        android:maxLines="1" />
+        android:maxLines="1" / -->
 
     <!-- NOTE: Hide buttons to simplify the UI. Users can touch outside the dialog to
          dismiss it. -->
     <!-- NOTE: ListPreference's summary should be set to its value by the activity code. -->
-    <ListPreference
+    <!--ListPreference
         android:key="example_list"
         android:title="@string/pref_title_add_friends_to_messages"
         android:defaultValue="-1"
         android:entries="@array/pref_example_list_titles"
         android:entryValues="@array/pref_example_list_values"
         android:negativeButtonText="@null"
-        android:positiveButtonText="@null" />
+        android:positiveButtonText="@null" / -->
 
 </PreferenceScreen>

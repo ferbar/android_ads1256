@@ -22,21 +22,20 @@ public class GraphView extends View {
     public static boolean LINE = false;
 
     private Paint paint;
-    public float values[][];
-    public double times[];
+    public static float values[][] = new float[1000][];
+    public static double times[] = new double[1000];
+    /*
     private String[] horlabels;
     private String[] verlabels;
     private String title="";
+    */
     private boolean type;
-    private float max;
-    public int writePos=0;
+    private float max=5;
+    public static int writePos=0;
     private int[] graphColors = {Color.BLUE, Color.RED, Color.GREEN, Color.YELLOW, Color.DKGRAY, Color.CYAN, Color.BLACK, Color.MAGENTA};
 
     public GraphView(Context context, AttributeSet attrs) /*, float[] values, String title, String[] horlabels, String[] verlabels, boolean type) */ {
         super(context, attrs);
-
-        this.values = new float[1000][];
-        this.times = new double[1000];
 
         /*
         if (title == null)
@@ -44,6 +43,7 @@ public class GraphView extends View {
         else
             this.title = title;
         */
+        /*
         if (horlabels == null) {
             // this.horlabels = new String[0];
             this.horlabels = new String[]{"today", "tomorrow", "next week", "next month"};
@@ -56,6 +56,7 @@ public class GraphView extends View {
         } else {
             this.verlabels = verlabels;
         }
+        */
         this.type = LINE;
         paint = new Paint();
     }
@@ -68,8 +69,10 @@ public class GraphView extends View {
         float width = getWidth() - 1;
         float max = getMax();
         float min = getMin();
+        /*
         double xmin=this.getMinTime();
         double xmax=this.getMaxTime();
+        */
         float diff = max - min;
         float graphheight = height - (2 * border);
         float graphwidth = width - (2 * border);
@@ -89,12 +92,12 @@ public class GraphView extends View {
         float y = graphheight + border;
         canvas.drawLine(horstart, y, width, y, paint);
         paint.setColor(Color.BLACK);
-        canvas.drawText(""+min, 0, y, paint);
+        canvas.drawText(String.format("%.1f", min), 0, y, paint);
         y = 0 + border;
         paint.setColor(Color.DKGRAY);
         canvas.drawLine(horstart, y, width, y, paint);
         paint.setColor(Color.BLACK);
-        canvas.drawText("" + max, 0, y, paint);
+        canvas.drawText(String.format("%.1fV", max), 0, y, paint);
 
 
         paint.setColor(Color.DKGRAY);
@@ -109,7 +112,7 @@ public class GraphView extends View {
         canvas.drawLine(x, height - border, x, border, paint);
         paint.setTextAlign(Align.RIGHT);
         paint.setColor(Color.BLACK);
-        double duration=this.times[(this.writePos+this.times.length-1)%this.times.length] - this.times[(this.writePos+this.times.length)%this.times.length];
+        double duration=GraphView.times[(this.writePos+GraphView.times.length-1)%GraphView.times.length] - GraphView.times[(this.writePos+GraphView.times.length)%GraphView.times.length];
         // Log.d(TAG, "last:" + String.format("%.2f",this.times[this.times.length - 1]) + " first:" + String.format("%.2f", this.times[0]));
         canvas.drawText(String.format("%.1fs", duration), x, height - 4, paint);
 
@@ -130,13 +133,14 @@ public class GraphView extends View {
         */
 
         paint.setColor(Color.RED);
-        x = ((graphwidth / this.values.length) * this.writePos) + horstart;
+        x = ((graphwidth / GraphView.values.length) * this.writePos) + horstart;
         canvas.drawLine(x, height - border, x, border, paint);
 
-
+        /*
         paint.setColor(Color.BLACK);
         paint.setTextAlign(Align.CENTER);
         canvas.drawText(title, (graphwidth / 2) + horstart, border - 4, paint);
+        */
 
         if (max != min) {
             paint.setColor(Color.LTGRAY);
@@ -204,18 +208,18 @@ public class GraphView extends View {
 
     private double getMaxTime() {
         double largest = Integer.MIN_VALUE;
-        for (int i = 0; i < this.times.length; i++)
-            if (this.times[i] > largest)
-                largest = this.times[i];
+        for (int i = 0; i < GraphView.times.length; i++)
+            if (GraphView.times[i] > largest)
+                largest = GraphView.times[i];
         return largest;
 
     }
 
     private double getMinTime() {
         double smallest = Integer.MAX_VALUE;
-        for (int i = 0; i < this.times.length; i++)
-            if (this.times[i] < smallest)
-                smallest = this.times[i];
+        for (int i = 0; i < GraphView.times.length; i++)
+            if (GraphView.times[i] < smallest)
+                smallest = GraphView.times[i];
         return smallest;
     }
 

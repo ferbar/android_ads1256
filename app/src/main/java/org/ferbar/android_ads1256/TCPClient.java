@@ -7,7 +7,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.LinkedList;
 import java.util.Locale;
+import java.util.Queue;
 
 /**
  * Created by chris on 05.02.17.
@@ -19,11 +21,12 @@ class TCPClient extends Thread {
     OutputStream out;
     InputStream in;
     private boolean mRun = true;
-    private OnMessageReceived mMessageListener = null;
+    final int TIMEOUT=5000;
+    String helloMessage=null;
 
-    double lastTime=0;
+    static Queue<CommandEntry> commandQueue=new LinkedList<CommandEntry>();
 
-    class Entry {
+    static class Entry {
         double time;
         int value[];
         public Entry(double time, int value[]) {
@@ -32,18 +35,24 @@ class TCPClient extends Thread {
         }
     }
 
-    //Declare the interface. The method messageReceived(String message) will must be implemented in the MyActivity
-    //class at on asynckTask doInBackground
-    interface OnMessageReceived {
-        public void helloMessageReceived(String message) throws InterruptedException;
-        public void dataMessageReceived(Entry[] dataList) throws InterruptedException;
+    static class CommandEntry {
+        CommandCallback callback;
+        String command;
+        Object data;
+        CommandEntry(CommandCallback callback, String command, Object data) {
+            this.callback=callback; this.command=command; this.data=data;
+        }
+    }
+
+    interface CommandCallback {
+        public void commandCallback(String result, Object data) throws InterruptedException;
     }
 
     /**
      *  Constructor of the class. OnMessagedReceived listens for the messages received from server
      */
-    public TCPClient(OnMessageReceived listener) {
-        mMessageListener = listener;
+    public TCPClient() {
+
     }
 
     public void stopClient(){
@@ -53,9 +62,11 @@ class TCPClient extends Thread {
     /**
      * Sends the message entered by client to the server
      * @param message text entered by client
+     *
      */
     public void sendMessage(String message) throws IOException {
         if (out != null ) {
+            Log.i(TAG, "C: sending >>>"+message+"<<<");
             byte[] m=message.getBytes();
             byte buffer[] = new byte[4];
             buffer[0]=(byte)(m.length & 0xff);
@@ -97,7 +108,21 @@ class TCPClient extends Thread {
             throw new Exception("error: reading " + size + "bytes (read:"+rc+"bytes)");
             */
         String serverMessage = new String(buffer);
+        if(serverMessage.length() < 100)
+            Log.i(TAG,"S: received [[["+serverMessage+"]]]");
+        else
+            Log.i(TAG,"S: received [[["+serverMessage.substring(0,100)+"...]]]");
         return serverMessage;
+    }
+
+    public void queueCommand(CommandCallback callback, String message, Object data) {
+        synchronized (this) {
+            if(!this.isAlive() && this.mRun==true) {
+                this.start();
+            }
+            TCPClient.commandQueue.add(new CommandEntry(callback, message, data));
+            this.notify();
+        }
     }
 
     @Override
@@ -122,9 +147,7 @@ class TCPClient extends Thread {
 
                     String serverMessage=this.readMessage();
                     Log.e(TAG, "HELLO MESSAGE FROM SERVER S: Received Message: '" + serverMessage + "'");
-                    if (mMessageListener != null) {
-                        mMessageListener.helloMessageReceived(serverMessage);
-                    }
+                    this.helloMessage=serverMessage;
 
                     Log.e(TAG, "C: Sent.");
 
@@ -133,31 +156,21 @@ class TCPClient extends Thread {
 
                     //in this while the client listens for the messages sent by the server
                     while (mRun) {
-                        this.sendMessage("g "+String.format(Locale.US, "%.6f", this.lastTime));
-                        serverMessage=this.readMessage();
-
-                        Log.e(TAG, "RESPONSE FROM SERVER S: Received Message: '" + serverMessage + "'");
-
-                        String data[] = serverMessage.split("\\n");
-                        Entry dataList[] = new Entry[data.length-1];
-                        for (int i=0; i<data.length-1; i++) { // in der letzten zeile is nix
-                            System.out.println(data[i]);
-                            String e[] = data[i].split(" ");
-                            double time=Double.parseDouble(e[0]);
-                            int values[]=new int[8];
-                            for(int j=0; j < 8; j++)
-                                values[j]=Integer.parseInt(e[j+1]);
-                            dataList[i]=new TCPClient.Entry(time, values);
-                            if(time > this.lastTime) {
-                                this.lastTime = time;
+                        synchronized (this) {
+                            if (this.commandQueue.isEmpty()) {
+                                this.wait(TIMEOUT); // keine möglichkeit um zwischen timeout und notify zu unterscheiden - super is das :-D
                             }
                         }
-
-                        if (mMessageListener != null) {
-                            //call the method messageReceived from MyActivity class
-                            mMessageListener.dataMessageReceived(dataList);
+                        CommandEntry command = this.commandQueue.poll();
+                        if(command != null) {
+                            this.sendMessage(command.command);
+                            serverMessage=this.readMessage();
+                            command.callback.commandCallback(serverMessage, command.data);
+                            continue;
+                        } else {
+                            this.sendMessage("p"); // ping senden
+                            serverMessage=this.readMessage();
                         }
-                        serverMessage = null;
                     }
 
 
@@ -184,7 +197,7 @@ class TCPClient extends Thread {
                     Log.e(TAG, "thread exit");
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Log.e(TAG,"sleep exception ",e);
                 break;
             }
         }

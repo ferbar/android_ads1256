@@ -10,9 +10,11 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
+import android.preference.SwitchPreference;
 import android.support.v7.app.ActionBar;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
@@ -34,10 +36,12 @@ import java.util.List;
  * API Guide</a> for more information on developing a Settings UI.
  */
 public class SettingsActivity extends AppCompatPreferenceActivity {
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setupActionBar();
+        getFragmentManager().beginTransaction().replace(android.R.id.content, new GeneralPreferenceFragment()).commit();
     }
 
     /**
@@ -63,79 +67,110 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
     /**
      * {@inheritDoc}
-     */
+     *
     @Override
     public boolean onIsMultiPane() {
         return isXLargeTablet(this);
     }
+    */
 
     /**
      * Helper method to determine if the device has an extra-large screen. For
      * example, 10" tablets are extra-large.
-     */
+     *
     private static boolean isXLargeTablet(Context context) {
         return (context.getResources().getConfiguration().screenLayout
                 & Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_XLARGE;
     }
+     */
 
     /**
      * {@inheritDoc}
-     */
+     *
     @Override
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public void onBuildHeaders(List<Header> target) {
         loadHeadersFromResource(R.xml.pref_headers, target);
     }
+    */
+
+    interface ChangeListener_and_Callback extends Preference.OnPreferenceChangeListener, TCPClient.CommandCallback {};
 
     /**
      * A preference value change listener that updates the preference's summary
      * to reflect its new value.
      */
-    private static Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new Preference.OnPreferenceChangeListener() {
+    private static Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new ChangeListener_and_Callback() {
+        class KeyValue {
+            Preference preference;
+            Object value;
+            KeyValue(Preference preference, Object value) {
+                this.preference=preference;
+                this.value=value;
+            }
+        }
+
         @Override
         public boolean onPreferenceChange(Preference preference, Object value) {
-            String stringValue = value.toString();
-
-            if (preference instanceof ListPreference) {
-                // For list preferences, look up the correct display value in
-                // the preference's 'entries' list.
-                ListPreference listPreference = (ListPreference) preference;
-                int index = listPreference.findIndexOfValue(stringValue);
-
-                // Set the summary to reflect the new value.
-                preference.setSummary(
-                        index >= 0
-                                ? listPreference.getEntries()[index]
-                                : null);
-
-            } else if (preference instanceof RingtonePreference) {
-                // For ringtone preferences, look up the correct display value
-                // using RingtoneManager.
-                if (TextUtils.isEmpty(stringValue)) {
-                    // Empty values correspond to 'silent' (no ringtone).
-                    preference.setSummary(R.string.pref_ringtone_silent);
-
-                } else {
-                    Ringtone ringtone = RingtoneManager.getRingtone(
-                            preference.getContext(), Uri.parse(stringValue));
-
-                    if (ringtone == null) {
-                        // Clear the summary if there was a lookup error.
-                        preference.setSummary(null);
-                    } else {
-                        // Set the summary to reflect the new ringtone display
-                        // name.
-                        String name = ringtone.getTitle(preference.getContext());
-                        preference.setSummary(name);
-                    }
-                }
-
-            } else {
-                // For all other preferences, set the summary to the value's
-                // simple string representation.
-                preference.setSummary(stringValue);
+            if(preference.getKey().startsWith("adc_")) {
+                App app = (App) preference.getContext().getApplicationContext();
+                TCPClient client = app.getClient();
+                client.queueCommand(this, "s " + preference.getKey() + "=" + value.toString(), new KeyValue(preference, value));
+            } else { // nur adc_ config sachen an den server schicken, der rest ist lokal
+                commandCallback(value.toString(), new KeyValue(preference, value));
             }
             return true;
+        }
+
+        @Override
+        public void commandCallback(String result, Object data) {
+            final Preference preference=((KeyValue) data).preference;
+            final String stringValue=result;
+            new Handler(preference.getContext().getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() { // Code here will run in UI thread
+                    if (preference instanceof ListPreference) {
+                        // For list preferences, look up the correct display value in
+                        // the preference's 'entries' list.
+                        ListPreference listPreference = (ListPreference) preference;
+                        int index = listPreference.findIndexOfValue(stringValue);
+
+                        // Set the summary to reflect the new value.
+                        preference.setSummary(
+                                index >= 0
+                                        ? listPreference.getEntries()[index]
+                                        : null);
+
+                    } else if (preference instanceof RingtonePreference) {
+                        // For ringtone preferences, look up the correct display value
+                        // using RingtoneManager.
+                        if (TextUtils.isEmpty(stringValue)) {
+                            // Empty values correspond to 'silent' (no ringtone).
+                            preference.setSummary(R.string.pref_ringtone_silent);
+
+                        } else {
+                            Ringtone ringtone = RingtoneManager.getRingtone(
+                                    preference.getContext(), Uri.parse(stringValue));
+
+                            if (ringtone == null) {
+                                // Clear the summary if there was a lookup error.
+                                preference.setSummary(null);
+                            } else {
+                                // Set the summary to reflect the new ringtone display
+                                // name.
+                                String name = ringtone.getTitle(preference.getContext());
+                                preference.setSummary(name);
+                            }
+                        }
+
+                    } else {
+                        // For all other preferences, set the summary to the value's
+                        // simple string representation.
+                        preference.setSummary(stringValue);
+                    }
+                }
+            });
+
         }
     };
 
@@ -154,10 +189,14 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
         // Trigger the listener immediately with the preference's
         // current value.
-        sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
-                PreferenceManager
-                        .getDefaultSharedPreferences(preference.getContext())
-                        .getString(preference.getKey(), ""));
+        if (! (preference instanceof SwitchPreference)) {
+            sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
+                    PreferenceManager
+                            .getDefaultSharedPreferences(preference.getContext())
+                            .getString(preference.getKey(), ""));
+        } else {
+            //TODO: preferences für switchbutton laden
+        }
     }
 
     /**
@@ -187,8 +226,11 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             // to their values. When their values change, their summaries are
             // updated to reflect the new value, per the Android Design
             // guidelines.
-            bindPreferenceSummaryToValue(findPreference("example_text"));
-            bindPreferenceSummaryToValue(findPreference("example_list"));
+            bindPreferenceSummaryToValue(findPreference("adc_input_gain"));
+            bindPreferenceSummaryToValue(findPreference("adc_sample_rate"));
+            bindPreferenceSummaryToValue(findPreference("adc_input_buffer"));
+            bindPreferenceSummaryToValue(findPreference("app_refresh_delay"));
+            bindPreferenceSummaryToValue(findPreference("adc_max_channels"));
         }
 
         @Override
